@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+
+<html lang="en">
+    <head>
+        <style>
+            img{
+                height:  300px;
+            }
+        </style>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.3.15/angular.js"></script>
+        <script>
+            angular.module("myApp", []).controller("myCtrl", function ($scope) {
+                $scope.aPictures = [
+                 { url: "https://farm4.staticflickr.com/3088/2688916488_1a125cd0e7_z_d.jpg", author: "Ângela Antunes", editor: "Sadeque"},
+                 { url: "https://farm4.staticflickr.com/3626/3390027827_56ca221e12_z_d.jpg?zz=1", author: "Jelene Morris", editor: "Sadeque"},
+                 { url: "https://farm8.staticflickr.com/7180/6837136236_5a254608fc_z_d.jpg", author: "Viola's Vision", editor: "Sadeque"},
+                 { url: "https://farm4.staticflickr.com/3666/9035469865_e06590d86e_z_d.jpg", author: "GalzeTX", editor: "Sadeque"}];
+                $scope.nextPicture = function () 
+                {
+                    $scope.n = $scope.n + 1;
+                    if ($scope.n >= $scope.aPictures.length) $scope.n = 0;
+                    $scope.currentPicture = $scope.aPictures[$scope.n].url;
+                    $scope.currentAuthor = $scope.aPictures[$scope.n].author;
+                    $scope.currentEditor = $scope.aPictures[$scope.n].editor;
+                };
+                $scope.n = -1;
+                $scope.nextPicture();
+            });
+
+        </script>
+        <meta charset="utf-8" />
+        <title>The Magic Puppy</title>
+    </head>
+    <body ng-app="myApp" ng-controller="myCtrl">
+        <h1>The Magic Puppy</h1>
+        <figure>
+            <img src="{{currentPicture}}" alt="picture of puppy"/>
+            <figcaption>Picture by {{currentAuthor}}</figcaption>
+            <figcaption>Edited by {{currentEditor}}</figcaption>
+        </figure>
+        <button ng-click="nextPicture()">Next</button>
+    </body>
+</html>
