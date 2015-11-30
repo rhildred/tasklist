@@ -6,15 +6,33 @@
                                                {
             // this will hold the amounts that are entered
             $scope.tasks =  [];
+            function getTasks(){
+                $http.get("/tasks").success(function(oTaskList){
+                    $scope.tasks = oTaskList;
+                });
+            }
+            getTasks();
             $scope.task = {};
             //define what happens when the button is clicked
             $scope.addTask = function()
             {
                 //alert("button clicked");
-                $scope.tasks.push($scope.task.currentTask);
                 $http.post("/tasks", $scope.task).success(function(oRc){
                     console.log(oRc);
                     $scope.task.currentTask = "";
+                    getTasks();
+                });
+            };
+            $scope.finishTask = function(nId){
+                $http.post("/tasks/" + nId).success(function(oRc){
+                    console.log(oRc);
+                    getTasks();
+                });
+            };
+            $scope.deleteTask = function(nId){
+                $http.delete("/tasks/" + nId).success(function(oRc){
+                    console.log(oRc);
+                    getTasks();
                 });
             };
             //alert("initializing");
@@ -23,7 +41,7 @@
 
     <body>
         <div ng-app="myApp" ng-controller="myCtrl">
-            <div ng-repeat="(n, listTask) in tasks track by n">{{listTask}}</div>
+            <div ng-repeat="(n, listTask) in tasks track by n">{{listTask.description}} <button ng-click="finishTask(listTask.id)">Finish</button><button ng-click="deleteTask(listTask.id)">Delete</button></div>
             <form><p>New Task : <input type="text" ng-model="task.currentTask"></p>
                 <button type = "submit" ng-click="addTask()">Add</button>
             </form>
