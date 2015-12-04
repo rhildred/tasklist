@@ -61,7 +61,7 @@ $oApp->get("/login", function() use( $oApp){
     }
 });
 
-$oApp->get("/currentUser", function() use($oApp){
+$oApp->get("/currentUser", new \Auth(), function() use($oApp){
     echo json_encode($_SESSION['CurrentUser']);
 });
 
