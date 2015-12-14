@@ -1,15 +1,17 @@
 <?php
 
-require "vendor/autoload.php";
+require "../vendor/autoload.php";
 
-$oApp = new \Slim\Slim(array('templates.path' => __DIR__));
+$oApp = new \Slim\Slim(array('templates.path' => __DIR__ . "/../views"));
 // open databaase
-$oDb = new PDO("sqlite:" . __DIR__ . "/tasks.sqlite");
+$oDb = new PDO("sqlite:" . __DIR__ . "/../tasks.sqlite");
 
+// the form
 $oApp->get("/", function() use($oApp){
     $oApp->render("tasks.phtml");
 });
 
+// read
 $oApp->get("/tasks", new \Auth(), function() use($oApp, $oDb){
     $oStmt = $oDb->prepare("SELECT * FROM tasks");
     $oStmt->execute();
@@ -17,6 +19,7 @@ $oApp->get("/tasks", new \Auth(), function() use($oApp, $oDb){
     echo json_encode($aTasks);
 });
 
+// create
 $oApp->post("/tasks", new \Auth(), function() use($oApp, $oDb){
     $oData = json_decode($oApp->request->getBody());
     $oStmt = $oDb->prepare("INSERT INTO tasks(description) VALUES(:task)");
@@ -25,6 +28,7 @@ $oApp->post("/tasks", new \Auth(), function() use($oApp, $oDb){
     echo json_encode(array("rows"=>$oStmt->rowCount()));
 });
 
+// update
 $oApp->post("/tasks/:id", new \Auth(), function($id) use($oApp, $oDb){
     $oData = json_decode($oApp->request->getBody());
     $oStmt = $oDb->prepare("UPDATE tasks SET finished = 1 WHERE id = :id");
@@ -33,6 +37,7 @@ $oApp->post("/tasks/:id", new \Auth(), function($id) use($oApp, $oDb){
     echo json_encode(array("rows"=>$oStmt->rowCount()));
 });
 
+// delete
 $oApp->delete("/tasks/:id", new \Auth(), function($id) use($oApp, $oDb){
     $oStmt = $oDb->prepare("DELETE FROM tasks WHERE id = :id");
     $oStmt->bindParam("id", $id);
@@ -41,6 +46,7 @@ $oApp->delete("/tasks/:id", new \Auth(), function($id) use($oApp, $oDb){
 
 });
 
+// oauth2 code
 $oApp->get("/login", function() use( $oApp){
     // see if this is the original redirect or if it's the callback
     $sCode = $oApp->request->params('code');

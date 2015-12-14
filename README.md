@@ -1,42 +1,110 @@
-Angular.js
+[Tasklist](https://github.com/rhildred/tasklist)
 =====
 
-Angular has an, I think, unfair reputation as having a steep learning curve. I view it more as a fresh start on html5 programming. Consider this html `body` snippet
+This is the first union of php/slim framework back end and angular front end. We can't have  back end that allows a user to edit, without security. In order to have a back end that allows us to have security, we need a new dependency:
 
 ```
 
-    <body ng-app="myApp" ng-controller="myCtrl">
-        <h1>The Magic Puppy</h1>
-        <figure>
-            <img src="{{currentPicture}}" alt="picture of puppy"/>
-            <figcaption>Picture by {{currentAuthor}}</figcaption>
-        </figure>
-        <button ng-click="nextPicture()">Next</button>
-    </body>
-    
-```
-
-In it, we have a couple of variables with nice descriptive names `currentPicture` and `currentAuthor`. The context for the `currentPicture` is an img src=. Likewise the context for `currentAuthor` starts with the phrase "Picture by". Hopefully you can see from this context how both variables are used.
-
-The variables in angular have a scope, that is, a range of view. In fact the range of view is the `body` of the html5 page. The scope is defined by the `ng-controller` directive, which itself has a context defined by the `ng-app` directive to be an angular module named "myApp". This architecture is refered to as model view view-model (mvvm).
-
-HTML5 elements like forms and buttons can also have interactive behaviour. For instance when the button is clicked the `nextPicture()` behaviour is triggered. Consider now the scope for the body of our html5 page:
-
-```
-            angular.module("myApp", []).controller("myCtrl", function ($scope) {
-                $scope.aPictures = [{ url: "https://farm4.staticflickr.com/3088/2688916488_1a125cd0e7_z_d.jpg", author: "Ângela Antunes" },
-                 { url: "https://farm4.staticflickr.com/3626/3390027827_56ca221e12_z_d.jpg?zz=1", author: "Jelene Morris"}];
-                $scope.nextPicture = function () {
-                    $scope.n = $scope.n + 1;
-                    if ($scope.n >= $scope.aPictures.length) $scope.n = 0;
-                    $scope.currentPicture = $scope.aPictures[$scope.n].url;
-                    $scope.currentAuthor = $scope.aPictures[$scope.n].author;
-                };
-                $scope.n = -1;
-                $scope.nextPicture();
-            });
-
+{
+    "require": {
+        "slim/slim": "^2.6",
+	"rhildred/oauth2": "dev-master"
+    }
+}
 
 ```
 
-If we start with the behaviour `$scope.nextPicture()` we can see the currentPicture and currentAuthor variables being updated. The context of the update is the array containing our data `$scope.aPictures`. You can see the [complete example here](https://github.com/rhildred/simpleangular), or [view a demo here](https://rhildred.github.io/simpleangular). Hopefully you will agree that this is a very straightforward way to add behaviour to html5.
+rhildred/oauth2 depends on google's oauth2 service to create mutual trust between a user that may not already trust our site, but trusts google and our site, which certainly can't trust any user. This trust is established with a secret key that is contained in creds/google.json.
+
+```
+
+{"ClientID":"<Your client ID here>", "ClientSecret":"<Your client secret here>",
+"Users":["<email of trusted user>"]}
+
+```
+
+You can get a [clientid and client secret here.](https://console.developers.google.com) You will need a google login to use this. I login by going to the /login endpoint. Once logged in I can access the other endpoints in the index.php file which are protected by a `new \Auth()`.
+
+```
+
+<?php
+
+require "../vendor/autoload.php";
+
+$oApp = new \Slim\Slim(array('templates.path' => __DIR__ . "/../views"));
+// open databaase
+$oDb = new PDO("sqlite:" . __DIR__ . "/../tasks.sqlite");
+
+// the form
+$oApp->get("/", function() use($oApp){
+    $oApp->render("tasks.phtml");
+});
+
+// read
+$oApp->get("/tasks", new \Auth(), function() use($oApp, $oDb){
+    $oStmt = $oDb->prepare("SELECT * FROM tasks");
+    $oStmt->execute();
+    $aTasks = $oStmt->fetchAll(PDO::FETCH_OBJ);
+    echo json_encode($aTasks);
+});
+
+// create
+$oApp->post("/tasks", new \Auth(), function() use($oApp, $oDb){
+    $oData = json_decode($oApp->request->getBody());
+    $oStmt = $oDb->prepare("INSERT INTO tasks(description) VALUES(:task)");
+    $oStmt->bindParam("task", $oData->currentTask);
+    $oStmt->execute();
+    echo json_encode(array("rows"=>$oStmt->rowCount()));
+});
+
+// update
+$oApp->post("/tasks/:id", new \Auth(), function($id) use($oApp, $oDb){
+    $oData = json_decode($oApp->request->getBody());
+    $oStmt = $oDb->prepare("UPDATE tasks SET finished = 1 WHERE id = :id");
+    $oStmt->bindParam("id", $id);
+    $oStmt->execute();
+    echo json_encode(array("rows"=>$oStmt->rowCount()));
+});
+
+// delete
+$oApp->delete("/tasks/:id", new \Auth(), function($id) use($oApp, $oDb){
+    $oStmt = $oDb->prepare("DELETE FROM tasks WHERE id = :id");
+    $oStmt->bindParam("id", $id);
+    $oStmt->execute();
+    echo json_encode(array("rows"=>$oStmt->rowCount()));
+
+});
+
+// oauth2 code
+$oApp->get("/login", function() use( $oApp){
+    // see if this is the original redirect or if it's the callback
+    $sCode = $oApp->request->params('code');
+    // get the uri to redirect to
+    $sUrl = "http";
+    if(!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443)
+    {
+        $sUrl .= "s";
+    }
+    $sUrl .= "://" . $_SERVER["HTTP_HOST"] . $_SERVER["REQUEST_URI"];
+
+    $oAuth = new \Oauth2($sUrl);
+    if($sCode == null){
+        $oApp->response->redirect($oAuth->redirectUrl());
+    }else{
+        $oAuth->handleCode($sCode);
+        $oApp->response->redirect("/");
+    }
+});
+
+$oApp->get("/currentUser", new \Auth(), function() use($oApp){
+    echo json_encode($_SESSION['CurrentUser']);
+});
+
+$oApp->get("/logout", function(){
+    session_start();
+    unset($_SESSION["CurrentUser"]);
+});
+
+$oApp->run();
+
+```
