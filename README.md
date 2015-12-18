@@ -40,7 +40,7 @@ $oApp->get("/", function() use($oApp){
     $oApp->render("tasks.phtml");
 });
 
-// read
+// read ... complete example at https://github.com/rhildred/tasklist
 $oApp->get("/tasks", new \Auth(), function() use($oApp, $oDb){
     $oStmt = $oDb->prepare("SELECT * FROM tasks");
     $oStmt->execute();
@@ -48,7 +48,7 @@ $oApp->get("/tasks", new \Auth(), function() use($oApp, $oDb){
     echo json_encode($aTasks);
 });
 
-// create
+// create ... complete example at https://github.com/rhildred/tasklist
 $oApp->post("/tasks", new \Auth(), function() use($oApp, $oDb){
     $oData = json_decode($oApp->request->getBody());
     $oStmt = $oDb->prepare("INSERT INTO tasks(description) VALUES(:task)");
@@ -57,7 +57,7 @@ $oApp->post("/tasks", new \Auth(), function() use($oApp, $oDb){
     echo json_encode(array("rows"=>$oStmt->rowCount()));
 });
 
-// update
+// update ... complete example at https://github.com/rhildred/tasklist
 $oApp->post("/tasks/:id", new \Auth(), function($id) use($oApp, $oDb){
     $oData = json_decode($oApp->request->getBody());
     $oStmt = $oDb->prepare("UPDATE tasks SET finished = 1 WHERE id = :id");
@@ -66,7 +66,7 @@ $oApp->post("/tasks/:id", new \Auth(), function($id) use($oApp, $oDb){
     echo json_encode(array("rows"=>$oStmt->rowCount()));
 });
 
-// delete
+// delete ... complete example at https://github.com/rhildred/tasklist
 $oApp->delete("/tasks/:id", new \Auth(), function($id) use($oApp, $oDb){
     $oStmt = $oDb->prepare("DELETE FROM tasks WHERE id = :id");
     $oStmt->bindParam("id", $id);
